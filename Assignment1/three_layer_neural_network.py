@@ -75,7 +75,12 @@ class NeuralNetwork(object):
         '''
 
         # YOU IMPLMENT YOUR actFun HERE
-
+        if type == 'tanh':
+            return np.tanh(z)
+        elif type == 'sigmoid':
+            return 1/(1 + np.exp(-z))
+        elif type == 'relu':
+            return np.maximum(0, z)
         return None
 
     def diff_actFun(self, z, type):
@@ -87,7 +92,14 @@ class NeuralNetwork(object):
         '''
 
         # YOU IMPLEMENT YOUR diff_actFun HERE
-
+        if type == 'tanh':
+            tanh = np.tanh(z)
+            return 1.0 - np.square(tanh)
+        elif type == 'sigmoid':
+            sigmoid = 1/(1 + np.exp(-z))
+            return sigmoid * (1 - sigmoid)
+        elif type == 'relu':
+            return np.where(z > 0, 1.0, 0.0)
         return None
 
     def feedforward(self, X, actFun):
@@ -101,9 +113,9 @@ class NeuralNetwork(object):
 
         # YOU IMPLEMENT YOUR feedforward HERE
 
-        # self.z1 =
-        # self.a1 =
-        # self.z2 =
+        self.z1 = np.dot(X, self.W1) + self.b1
+        self.a1 = actFun(self.z1)
+        self.z2 = np.dot(self.a1, self.W2) + self.b2
         exp_scores = np.exp(self.z2)
         self.probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
         return None
@@ -121,7 +133,7 @@ class NeuralNetwork(object):
 
         # YOU IMPLEMENT YOUR CALCULATION OF THE LOSS HERE
 
-        # data_loss =
+        data_loss = np.sum(np.dot(y, np.log(self.probs)))
 
         # Add regulatization term to loss (optional)
         data_loss += self.reg_lambda / 2 * (np.sum(np.square(self.W1)) + np.sum(np.square(self.W2)))
@@ -148,10 +160,13 @@ class NeuralNetwork(object):
         num_examples = len(X)
         delta3 = self.probs
         delta3[range(num_examples), y] -= 1
-        # dW2 = dL/dW2
-        # db2 = dL/db2
-        # dW1 = dL/dW1
-        # db1 = dL/db1
+
+        dW2 = np.dot(self.a1.transpose(), delta3)
+        db2 = np.sum(delta3,axis=0)
+
+        delta2 = self.diff_actFun(self.z1, type=self.actFun_type) * np.dot(delta3, self.W2.transpose())
+        dW1 = np.dot(X.transpose(), delta2)
+        db1 = np.sum(delta2, axis=0)
         return dW1, dW2, db1, db2
 
     def fit_model(self, X, y, epsilon=0.01, num_passes=20000, print_loss=True):
@@ -196,13 +211,14 @@ class NeuralNetwork(object):
 
 def main():
     # # generate and visualize Make-Moons dataset
-    # X, y = generate_data()
-    # plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
-    # plt.show()
+    X, y = generate_data()
+     #plt.scatter(X[:, 0], X[:, 1], s=40, c=y, cmap=plt.cm.Spectral)
+     #plt.show()
 
-    # model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3 , nn_output_dim=2, actFun_type='tanh')
-    # model.fit_model(X,y)
-    # model.visualize_decision_boundary(X,y)
+    plt.title('Hidden Layer size 100')
+    model = NeuralNetwork(nn_input_dim=2, nn_hidden_dim=3, nn_output_dim=2, actFun_type='tanh')
+    model.fit_model(X,y)
+    model.visualize_decision_boundary(X,y)
 
 if __name__ == "__main__":
     main()
